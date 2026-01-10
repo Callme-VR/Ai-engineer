@@ -298,3 +298,56 @@ async def ATTACH_TMDB_CARD_BY_TITLE(title: str) -> Optional[TMDBMOVIES_CARD]:
     except Exception:
         return None
     # end try
+
+
+# ================================== #
+# startup:LOAD PICKLES
+# ======================================#
+
+# ==================================
+# Startup: LOAD PICKLES
+# ==================================
+
+@app.on_event("startup")
+def Load_pickel():
+    global df, indices_obj, tfidf_matrix, tfidf_object, TITLE_TO_INDEX
+
+    # Load dataframe
+    with open(DF_PATH, "rb") as f:
+        df = pickle.load(f)
+
+    # Load indices
+    with open(INDICES_PATH, "rb") as f:
+        indices_obj = pickle.load(f)
+
+    # Load TF-IDF matrix (scipy sparse matrix)
+    with open(TFIDF_MATRIX_PATH, "rb") as f:
+        tfidf_matrix = pickle.load(f)
+
+    # Load TF-IDF vectorizer (optional)
+    with open(TFIDF_OBJECT_PATH, "rb") as f:
+        tfidf_object = pickle.load(f)
+
+    # Build normalized title → index map
+    TITLE_TO_INDEX = Build_TITLE_TO_INDEX_MAP(indices_obj)
+
+    # Sanity check
+    if df is None or "title" not in df.columns:
+        raise RuntimeError(
+            "df.pkl must contain a DataFrame with a 'title' column"
+        )
+
+# ============================#
+# routes
+# ============================#
+
+
+@app.get("/health")
+#  for example taken as enpoint is health
+async def health():
+    return {"status": "ok"}
+
+
+# ======================================#
+# for the homes feed
+# =====================================#
