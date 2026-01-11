@@ -293,7 +293,7 @@ async def ATTACH_TMDB_CARD_BY_TITLE(title: str) -> Optional[TMDBMOVIES_CARD]:
 # ==================================
 
 @app.on_event("startup")
-def Load_pickel():
+def load_pickle():
     global df, indices_obj, tfidf_matrix, tfidf_object, TITLE_TO_INDEX
 
     with open(DF_PATH, "rb") as f:
