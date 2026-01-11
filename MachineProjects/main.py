@@ -327,11 +327,12 @@ async def health():
 # for the homes feed
 # =====================================
 
-@app.get("/homes", response_model=List[TMDBMOVIES_CARD])
-async def homes(
-    category: str = Query("popular"),
-    limit: int = Query(25, ge=2, le=50),
+@app.get("/home", response_model=List[TMDBMOVIES_CARD])
+async def home_feed(
+    category: str = Query("popular", min_length=1),
+    limit: int = Query(20, ge=2, le=50),
 ):
+    category = category.lower()
     if category == "trending":
         data = await TMDB_get("/trending/movie/day", {"language": "en-us"})
         return await TMDB_CARD_FROM_RESULT(data.get("results", []), limit)
@@ -353,7 +354,7 @@ async def tmdb_search(
 
 @app.get("/movie/id/{tmdb_id}", response_model=TMDBMOVIESDETAILS)
 async def movie_details_routes(tmdb_id: int):
-    return await TMDB_MOVIE_DETAILS(tmdb_id=tmdb_id)
+    return await TMDB_MOVIE_DETAILS(movie_id=tmdb_id)
 
 
 @app.get("/recommend/genre", response_model=List[TMDBMOVIES_CARD])
@@ -361,7 +362,7 @@ async def recommend_genre(
     tmdb_id: int = Query(...),
     limit: int = Query(10, ge=1, le=50),
 ):
-    details = await TMDB_MOVIE_DETAILS(tmdb_id)
+    details = await TMDB_MOVIE_DETAILS(movie_id=tmdb_id)
     if not details.genres:
         return []
 
@@ -404,7 +405,7 @@ async def Search_bundle(
         )
 
     tmdb_id = int(best_movies["id"])
-    details = await TMDB_MOVIE_DETAILS(tmdb_id)
+    details = await TMDB_MOVIE_DETAILS(movie_id=tmdb_id)
 
     tfidf_items: List[TFIDFRECITEM] = []
 

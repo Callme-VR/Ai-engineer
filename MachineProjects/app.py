@@ -57,7 +57,7 @@ def goto_details(tmdb_id: int):
     st.session_state.selected_tmdb_id = int(tmdb_id)
     st.query_params["view"] = "details"
     st.query_params["id"] = str(int(tmdb_id))
-    st.experimental_rerun()
+    st.rerun()
 
 
 # api helper functions
@@ -95,7 +95,7 @@ def poster_grid(cards, cols=6, key_prefix="grid"):
 
             with colset[c]:
                 if poster:
-                    st.image(poster, use_column_width=True)
+                    st.image(poster, width='stretch')
                 else:
                     st.write("No poster available")
 
@@ -116,9 +116,9 @@ def to_cards_From_Tfidf_items(tfidf_items):
         if tmdb.get("tmdb_id"):
             cards.append(
                 {
-                    "Tmdb_id": tmdb.get("tmdb_id"),
-                    "Title": tmdb.get("title"),
-                    "Poster_url": tmdb.get("poster_url"),
+                    "tmdb_id": tmdb.get("tmdb_id"),
+                    "title": tmdb.get("title"),
+                    "poster_url": tmdb.get("poster_url"),
                 }
             )
     return cards
@@ -139,10 +139,10 @@ def parse_tmdb_search_to_cards(data, keyword: str, limit: int = 25):
 
             raw_items.append(
                 {
-                    "Tmdb_id": int(tmdb_id),
-                    "Title": title,
-                    "Poster_url": TMDB_IMG + poster_path if poster_path else "",
-                    "Release_date": m.get("release_date", ""),
+                    "tmdb_id": int(tmdb_id),
+                    "title": title,
+                    "poster_url": TMDB_IMG + poster_path if poster_path else "",
+                    "release_date": m.get("release_date", ""),
                 }
             )
 
@@ -151,20 +151,20 @@ def parse_tmdb_search_to_cards(data, keyword: str, limit: int = 25):
     else:
         raw_items = []
 
-    matches = [x for x in raw_items if keyword_l in x["Title"].lower()][:limit]
+    matches = [x for x in raw_items if keyword_l in x["title"].lower()][:limit]
     final_list = matches if matches else raw_items[:limit]
 
     suggestions = []
     for x in final_list[:10]:
-        year = (x.get("Release_date") or "").split("-")[0]
-        suggestions.append((f"{x['Title']} ({year})", x["Tmdb_id"]))
+        year = (x.get("release_date") or "").split("-")[0]
+        suggestions.append((f"{x['title']} ({year})", x["tmdb_id"]))
 
     cards = [
         {
-            "Tmdb_id": x["Tmdb_id"],
-            "Title": x["Title"],
-            "Poster_url": x["Poster_url"],
-            "Release_date": x["Release_date"],
+            "tmdb_id": x["tmdb_id"],
+            "title": x["title"],
+            "poster_url": x["poster_url"],
+            "release_date": x["release_date"],
         }
         for x in final_list
     ]
@@ -258,7 +258,7 @@ if st.session_state.view == "details":
         if st.button("← Back to Home"):
             goto_home()
 
-    data, err = api_get_json(f"/bundle_search", params={"q": tmdb_id})
+    data, err = api_get_json(f"/movie/id/{tmdb_id}")
     if err or not data:
         st.error(f"Failed to fetch movie details: {err}")
         st.stop()
@@ -267,9 +267,8 @@ if st.session_state.view == "details":
 
     with left:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
-        movie_details = data.get("movies_details", {})
-        if movie_details.get("poster_url"):
-            st.image(movie_details["poster_url"], use_column_width=True)
+        if data.get("poster_url"):
+            st.image(data["poster_url"], width='stretch')
         else:
             st.write("🌆 NO poster available for this movie")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -294,7 +293,7 @@ if st.session_state.view == "details":
 
     if data.get("backdrop_url"):
         st.markdown("#### Backdrop")
-        st.image(data["backdrop_url"], use_column_width=True)
+        st.image(data["backdrop_url"], width='stretch')
 
     st.divider()
     st.markdown("### ✅ Recommendations")
@@ -303,23 +302,28 @@ if st.session_state.view == "details":
     
     title=(data.get("title") or "").strip()
     if title:
-        bundle,err2=api_get_json("/movie/search",params={"query":title,"genre_limit":12,"tfidf_top_n":12})
-        if err2 or not bundle:
-            st.mardown("### 🔍similiar movies(TF-IDF)")
-            poster_grid(
-                to_cards_From_Tfidf_items(bundle.get("tfidf Recommendations using by own Models")),
-                cols=grid_cols,
-                key_prefix="Detailed_TFIDF_genre"
-            )
-            
-        else:
-            st.info("Showing the Genre Recommendations(fallback)")
-            genre_only,err3=api_get_json("/recommend/genre",params={"tmdb_id":tmdb_id,"limits":18})
-            
-            if not err3 and genre_only:
+        bundle, err2 = api_get_json("/movie/search", params={"query": title, "genre_limit": 12, "tfidf_top_n": 12})
+        if not err2 and bundle:
+            st.markdown("### 🔍 Similar Movies (TF-IDF)")
+            tfidf_cards = to_cards_From_Tfidf_items(bundle.get("TFIDF_RECOMMENDATIONS"))
+            if tfidf_cards:
                 poster_grid(
-                    to_cards_From_Genre_items(genre_only.get("genre_recommendations")),
+                    tfidf_cards,
+                    cols=grid_cols,
+                    key_prefix="Detailed_TFIDF_genre"
+                )
+            else:
+                st.info("No TF-IDF recommendations found.")
+
+            st.markdown("### 🎭 Similar Movies (Genre)")
+            genre_cards = bundle.get("GENRE_RECOMMENDATIONS", [])
+            if genre_cards:
+                poster_grid(
+                    genre_cards,
                     cols=grid_cols,
                     key_prefix="Detailed_Genre"
                 )
-            st.warning("No Recommendations found")
+            else:
+                st.info("No genre recommendations found.")
+        else:
+            st.warning("Could not fetch recommendations.")
