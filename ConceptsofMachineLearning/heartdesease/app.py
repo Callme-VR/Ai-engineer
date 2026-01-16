@@ -30,3 +30,43 @@ st_slope = st.selectbox("ST Slope", ["Up", "Flat", "Down"])
 
 # When Predict is clicked
 if st.button("Predict"):
+    # Create a DataFrame with the user input (using proper column names)
+    user_input = pd.DataFrame({
+        'Age': [age],
+        'Sex': [sex],
+        'ChestPainType': [chest_pain],
+        'RestingBP': [resting_bp],
+        'Cholesterol': [cholesterol],
+        'FastingBS': [fasting_bs],
+        'RestingECG': [resting_ecg],
+        'MaxHR': [max_hr],
+        'ExerciseAngina': [exercise_angina],
+        'Oldpeak': [oldpeak],
+        'ST_Slope': [st_slope]
+    })
+
+    # One-hot encode categorical variables
+    user_input = pd.get_dummies(user_input, columns=[
+                                'Sex', 'ChestPainType', 'RestingECG', 'ExerciseAngina', 'ST_Slope'])
+
+    # Ensure all expected columns are present (add missing columns with 0)
+    for col in expected_columns:
+        if col not in user_input.columns:
+            user_input[col] = 0
+
+    # Reorder columns to match the expected order
+    user_input = user_input[expected_columns]
+
+    # Scale the input
+    user_input = scaler.transform(user_input)
+
+    # Make prediction
+    prediction = model.predict(user_input)
+
+    # Display the prediction
+    if prediction[0] == 1:
+        st.write(
+            "⚠️ Based on the provided details, you are at risk of having heart disease.")
+    else:
+        st.write(
+            "✅ Based on the provided details, you are not at risk of having heart disease.")
