@@ -84,3 +84,8 @@ marks=float(input("Enter your marks:"))
 print("name:",name)
 print("age:",age)
 print("marks:",marks)
+
+
+
+
+print(type(name))
