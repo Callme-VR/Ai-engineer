@@ -85,7 +85,4 @@ print("name:",name)
 print("age:",age)
 print("marks:",marks)
 
-
-
-
 print(type(name))
