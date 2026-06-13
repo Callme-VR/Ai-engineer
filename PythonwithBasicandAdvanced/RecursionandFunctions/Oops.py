@@ -55,7 +55,7 @@ print(p2.brand,p2.price)
 # class and instances attributes
 
 
-private attributes and methods in python
+# private attributes and methods in python
 
 
 class Person:
@@ -112,13 +112,13 @@ car1.Start()
 car1.Stop()
 
 
-types of inheritance
+# types of inheritance
 
-1.single inheritance
-2.multiple inheritance
-3.multilevel inheritance
-4.hierarchical inheritance
-5.hybrid inheritance
+# 1.single inheritance
+# 2.multiple inheritance
+# 3.multilevel inheritance
+# 4.hierarchical inheritance
+# 5.hybrid inheritance
 
 
 # exmaple of mutililevel inheritance
